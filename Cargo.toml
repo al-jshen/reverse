@@ -1,8 +1,14 @@
 [package]
 name = "reverse"
-version = "0.1.0"
+version = "0.0.1"
 edition = "2018"
+authors = ["Jeff Shen <jshen2014@hotmail.com>"]
+license = "MIT OR Apache-2.0"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+readme = "README.md"
+description = "Reverse mode automatic differentiation."
+repository = "https://github.com/al-jshen/reverse"
+
+categories = ["science"]
 
 [dependencies]
