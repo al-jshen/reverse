@@ -15,4 +15,4 @@ categories = ["science"]
 reverse_differentiable = { version = "0.1", optional = true, path = "../reverse_differentiable"}
 
 [features]
-differentiable = ["reverse_differentiable"]
+diff = ["reverse_differentiable"]

@@ -1,3 +1,10 @@
+#[cfg(feature = "diff")]
+#[macro_use]
+extern crate reverse_differentiable;
+#[cfg(feature = "diff")]
+#[doc(hidden)]
+pub use reverse_differentiable::differentiable;
+
 use std::{
     cell::RefCell,
     ops::{Add, Div, Mul, Neg, Sub},
