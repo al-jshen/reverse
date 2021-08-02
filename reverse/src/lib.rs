@@ -30,11 +30,6 @@ pub struct Graph {
     nodes: RefCell<Vec<Node>>,
 }
 
-#[derive(Debug, Clone)]
-pub struct Gradient {
-    gradients: Vec<f64>,
-}
-
 impl Graph {
     pub fn new() -> Self {
         Self {
@@ -67,7 +62,7 @@ impl<'a> Var<'a> {
     pub fn val(&self) -> f64 {
         self.val
     }
-    pub fn backward(&self) -> Gradient {
+    pub fn grad(&self) -> Vec<f64> {
         let n = self.graph.len();
         let mut derivs = vec![0.; n];
         derivs[self.location] = 1.;
@@ -77,7 +72,7 @@ impl<'a> Var<'a> {
             derivs[n.dependencies[1]] += n.gradients[1] * derivs[idx];
         }
 
-        Gradient { gradients: derivs }
+        derivs
     }
     pub fn recip(&self) -> Self {
         let val = self.val.recip();
@@ -186,9 +181,33 @@ impl<'a> Display for Var<'a> {
     }
 }
 
-impl Gradient {
-    pub fn wrt(&self, v: &Var) -> f64 {
-        self.gradients[v.location]
+pub trait Gradient<T, S> {
+    fn wrt(&self, v: T) -> S;
+}
+
+impl<'a> Gradient<&Var<'a>, f64> for Vec<f64> {
+    fn wrt(&self, v: &Var) -> f64 {
+        self[v.location]
+    }
+}
+
+impl<'a> Gradient<&Vec<Var<'a>>, Vec<f64>> for Vec<f64> {
+    fn wrt(&self, v: &Vec<Var<'a>>) -> Vec<f64> {
+        let mut jac = vec![];
+        for i in v {
+            jac.push(self.wrt(i));
+        }
+        jac
+    }
+}
+
+impl<'a> Gradient<&[Var<'a>], Vec<f64>> for Vec<f64> {
+    fn wrt(&self, v: &[Var<'a>]) -> Vec<f64> {
+        let mut jac = vec![];
+        for i in v {
+            jac.push(self.wrt(i));
+        }
+        jac
     }
 }
 
@@ -393,7 +412,7 @@ mod test {
         let vars = (0..6).map(|x| graph.add_var(x as f64)).collect::<Vec<_>>();
         let res =
             -vars[0] + vars[1].sin() * vars[2].ln() - vars[3] / vars[4] + 1.5 * vars[5].sqrt();
-        let grads = res.backward();
+        let grads = res.grad();
         let est_grads = vars.iter().map(|v| grads.wrt(v)).collect::<Vec<_>>();
         let true_grads = vec![
             -1.,
@@ -416,7 +435,7 @@ mod test {
         let a = g.add_var(230.3);
         let b = g.add_var(33.2);
         let y = f(a, b);
-        let grads = y.backward();
+        let grads = y.grad();
         assert!((grads.wrt(&a) - -153284.83150602411).abs() < 1e-8);
         assert!((grads.wrt(&b) - 3815.0389441500993).abs() < 1e-8);
     }
@@ -430,7 +449,7 @@ mod test {
         let x = g.add_var(1.0);
         let y = g.add_var(2.0);
         let res = a.powf(b) - c * x / y;
-        let grads = res.backward();
+        let grads = res.grad();
         assert!((grads.wrt(&a) - 2.5 * 10.1_f64.powf(2.5 - 1.)).abs() < 1e-8);
         assert!((grads.wrt(&b) - 10.1_f64.powf(2.5) * 10.1_f64.ln()).abs() < 1e-8);
         assert!((grads.wrt(&c) - -1. / 2.).abs() < 1e-8);
@@ -443,9 +462,7 @@ mod test {
         let g = Graph::new();
         let params = (0..5).map(|x| g.add_var(x as f64)).collect::<Vec<_>>();
         let sum = params.iter().copied().sum::<Var>();
-        let derivs = sum.backward();
-        for p in params {
-            assert_eq!(derivs.wrt(&p), 1.);
-        }
+        let derivs = sum.grad();
+        assert_eq!(derivs.wrt(&params), vec![1.; 5]);
     }
 }
