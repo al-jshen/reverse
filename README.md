@@ -55,7 +55,7 @@ fn main() {
     println!("{:?}", res.backward());
 }
 
-// function must have these argument types
+// function must have these argument types but can be arbitrarily complex
 #[differentiable]
 fn addmul(params: &[f64], data: &[&[f64]]) -> f64 {
     params[0] + data[0][0] * params[1]
