@@ -7,6 +7,7 @@ pub use reverse_differentiable::differentiable;
 
 use std::{
     cell::RefCell,
+    iter::Sum,
     ops::{Add, Div, Mul, Neg, Sub},
 };
 
@@ -369,6 +370,12 @@ impl<'a> Powf<Var<'a>> for f64 {
     }
 }
 
+impl<'a> Sum<Var<'a>> for Var<'a> {
+    fn sum<I: Iterator<Item = Var<'a>>>(iter: I) -> Self {
+        iter.reduce(|a, b| a + b).unwrap()
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -422,5 +429,16 @@ mod test {
         assert!((grads.wrt(&c) - -1. / 2.).abs() < 1e-8);
         assert!((grads.wrt(&x) - -4. / 2.).abs() < 1e-8);
         assert!((grads.wrt(&y) - 4. * 1. / (2_f64.powi(2))).abs() < 1e-8);
+    }
+
+    #[test]
+    fn test_ad4() {
+        let g = Graph::new();
+        let params = (0..5).map(|x| g.add_var(x as f64)).collect::<Vec<_>>();
+        let sum = params.iter().copied().sum::<Var>();
+        let derivs = sum.backward();
+        for p in params {
+            assert_eq!(derivs.wrt(&p), 1.);
+        }
     }
 }
