@@ -14,7 +14,7 @@ use std::{
 
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct Node {
-    gradients: [f64; 2],
+    weights: [f64; 2],
     dependencies: [usize; 2],
 }
 
@@ -43,7 +43,7 @@ impl Graph {
         let mut nodes = self.nodes.borrow_mut();
         let n = nodes.len();
         nodes.push(Node {
-            gradients: [grad1, grad2],
+            weights: [grad1, grad2],
             dependencies: [loc1, loc2],
         });
         n
@@ -60,7 +60,7 @@ impl Graph {
         self.nodes
             .borrow_mut()
             .iter_mut()
-            .for_each(|n| n.gradients = [0., 0.]);
+            .for_each(|n| n.weights = [0., 0.]);
     }
     pub fn clear(&self) {
         self.nodes.borrow_mut().clear();
@@ -77,8 +77,8 @@ impl<'a> Var<'a> {
         derivs[self.location] = 1.;
 
         for (idx, n) in self.graph.nodes.borrow().iter().enumerate().rev() {
-            derivs[n.dependencies[0]] += n.gradients[0] * derivs[idx];
-            derivs[n.dependencies[1]] += n.gradients[1] * derivs[idx];
+            derivs[n.dependencies[0]] += n.weights[0] * derivs[idx];
+            derivs[n.dependencies[1]] += n.weights[1] * derivs[idx];
         }
 
         derivs
@@ -113,6 +113,18 @@ impl<'a> Var<'a> {
             graph: self.graph,
         }
     }
+    pub fn tan(&self) -> Self {
+        Self {
+            val: self.val.tan(),
+            location: self.graph.add_node(
+                self.location,
+                self.location,
+                1. / self.val.cos().powi(2),
+                0.,
+            ),
+            graph: self.graph,
+        }
+    }
     pub fn ln(&self) -> Self {
         Self {
             val: self.val.ln(),
@@ -122,12 +134,153 @@ impl<'a> Var<'a> {
             graph: self.graph,
         }
     }
+    pub fn log(&self, base: f64) -> Self {
+        Self {
+            val: self.val.log(base),
+            location: self.graph.add_node(
+                self.location,
+                self.location,
+                1. / (self.val * base.ln()),
+                0.,
+            ),
+            graph: self.graph,
+        }
+    }
+    pub fn log10(&self) -> Self {
+        self.log(10.)
+    }
+    pub fn log2(&self) -> Self {
+        self.log(2.)
+    }
+    pub fn ln_1p(&self) -> Self {
+        Self {
+            val: self.val.ln_1p(),
+            location: self
+                .graph
+                .add_node(self.location, self.location, 1. / (1. + self.val), 0.),
+            graph: self.graph,
+        }
+    }
+    pub fn asin(&self) -> Self {
+        Self {
+            val: self.val.asin(),
+            location: self.graph.add_node(
+                self.location,
+                self.location,
+                1. / (1. - self.val.powi(2)).sqrt(),
+                0.,
+            ),
+            graph: self.graph,
+        }
+    }
+    pub fn acos(&self) -> Self {
+        Self {
+            val: self.val.acos(),
+            location: self.graph.add_node(
+                self.location,
+                self.location,
+                -1. / (1. - self.val.powi(2)).sqrt(),
+                0.,
+            ),
+            graph: self.graph,
+        }
+    }
+    pub fn atan(&self) -> Self {
+        Self {
+            val: self.val.atan(),
+            location: self.graph.add_node(
+                self.location,
+                self.location,
+                1. / (1. + self.val.powi(2)),
+                0.,
+            ),
+            graph: self.graph,
+        }
+    }
+    pub fn sinh(&self) -> Self {
+        Self {
+            val: self.val.sinh(),
+            location: self
+                .graph
+                .add_node(self.location, self.location, self.val.cosh(), 0.),
+            graph: self.graph,
+        }
+    }
+    pub fn cosh(&self) -> Self {
+        Self {
+            val: self.val.cosh(),
+            location: self
+                .graph
+                .add_node(self.location, self.location, self.val.sinh(), 0.),
+            graph: self.graph,
+        }
+    }
+    pub fn tanh(&self) -> Self {
+        Self {
+            val: self.val.tanh(),
+            location: self.graph.add_node(
+                self.location,
+                self.location,
+                1. / (self.val.cosh().powi(2)),
+                0.,
+            ),
+            graph: self.graph,
+        }
+    }
+    pub fn asinh(&self) -> Self {
+        Self {
+            val: self.val.asinh(),
+            location: self.graph.add_node(
+                self.location,
+                self.location,
+                1. / (1. + self.val.powi(2)).sqrt(),
+                0.,
+            ),
+            graph: self.graph,
+        }
+    }
+    pub fn acosh(&self) -> Self {
+        Self {
+            val: self.val.acosh(),
+            location: self.graph.add_node(
+                self.location,
+                self.location,
+                1. / (self.val.powi(2) - 1.).sqrt(),
+                0.,
+            ),
+            graph: self.graph,
+        }
+    }
+    pub fn atanh(&self) -> Self {
+        Self {
+            val: self.val.atanh(),
+            location: self.graph.add_node(
+                self.location,
+                self.location,
+                1. / (1. - self.val.powi(2)),
+                0.,
+            ),
+            graph: self.graph,
+        }
+    }
     pub fn exp(&self) -> Self {
         Self {
             val: self.val.exp(),
             location: self
                 .graph
-                .add_node(self.location, self.location, self.val, 0.),
+                .add_node(self.location, self.location, self.val.exp(), 0.),
+            graph: self.graph,
+        }
+    }
+    pub fn exp2(self) -> Self {
+        Self {
+            val: self.val.exp2(),
+            location: self.graph.add_node(
+                self.location,
+                self.location,
+                self.val.exp2() * 2_f64.ln(),
+                0.,
+            ),
             graph: self.graph,
         }
     }
@@ -142,6 +295,9 @@ impl<'a> Var<'a> {
             ),
             graph: self.graph,
         }
+    }
+    pub fn cbrt(&self) -> Self {
+        self.powf(1. / 3.)
     }
     pub fn abs(&self) -> Self {
         let val = self.val.abs();
@@ -166,7 +322,7 @@ impl<'a> Var<'a> {
             location: self.graph.add_node(
                 self.location,
                 self.location,
-                (n - 1) as f64 * self.val.powi(n - 1),
+                n as f64 * self.val.powi(n - 1),
                 0.,
             ),
             graph: self.graph,
@@ -202,6 +358,24 @@ impl<'a> Gradient<&Vec<Var<'a>>, Vec<f64>> for Vec<f64> {
 
 impl<'a> Gradient<&[Var<'a>], Vec<f64>> for Vec<f64> {
     fn wrt(&self, v: &[Var<'a>]) -> Vec<f64> {
+        let mut jac = vec![];
+        for i in v {
+            jac.push(self.wrt(i));
+        }
+        jac
+    }
+}
+impl<'a, const N: usize> Gradient<[Var<'a>; N], Vec<f64>> for Vec<f64> {
+    fn wrt(&self, v: [Var<'a>; N]) -> Vec<f64> {
+        let mut jac = vec![];
+        for i in v {
+            jac.push(self.wrt(&i));
+        }
+        jac
+    }
+}
+impl<'a, const N: usize> Gradient<&[Var<'a>; N], Vec<f64>> for Vec<f64> {
+    fn wrt(&self, v: &[Var<'a>; N]) -> Vec<f64> {
         let mut jac = vec![];
         for i in v {
             jac.push(self.wrt(i));
@@ -394,6 +568,19 @@ impl<'a> Sum<Var<'a>> for Var<'a> {
 #[cfg(test)]
 mod test {
     use super::*;
+    use approx_eq::assert_approx_eq;
+
+    #[test]
+    fn test_ad0() {
+        let g = Graph::new();
+        let a = g.add_var(2.);
+        let b = a.exp() / 5.;
+        let c = a.exp2() / 5.;
+        let gradb = b.grad().wrt(&a);
+        let gradc = c.grad().wrt(&a);
+        assert_eq!(gradb, 2_f64.exp() / 5.);
+        assert_eq!(gradc, 1. / 5. * 2_f64.exp2() * 2_f64.ln());
+    }
 
     #[test]
     fn test_ad1() {
@@ -411,7 +598,9 @@ mod test {
             3. / 4_f64.powi(2),
             0.75 / 5_f64.sqrt(),
         ];
-        assert_eq!(est_grads, true_grads);
+        for i in 0..6 {
+            assert_approx_eq!(est_grads[i], true_grads[i]);
+        }
     }
 
     #[test]
@@ -425,8 +614,8 @@ mod test {
         let b = g.add_var(33.2);
         let y = f(a, b);
         let grads = y.grad();
-        assert!((grads.wrt(&a) - -153284.83150602411).abs() < 1e-8);
-        assert!((grads.wrt(&b) - 3815.0389441500993).abs() < 1e-8);
+        assert_approx_eq!(grads.wrt(&a), -153284.83150602411);
+        assert_approx_eq!(grads.wrt(&b), 3815.0389441500993);
     }
 
     #[test]
@@ -439,11 +628,11 @@ mod test {
         let y = g.add_var(2.0);
         let res = a.powf(b) - c * x / y;
         let grads = res.grad();
-        assert!((grads.wrt(&a) - 2.5 * 10.1_f64.powf(2.5 - 1.)).abs() < 1e-8);
-        assert!((grads.wrt(&b) - 10.1_f64.powf(2.5) * 10.1_f64.ln()).abs() < 1e-8);
-        assert!((grads.wrt(&c) - -1. / 2.).abs() < 1e-8);
-        assert!((grads.wrt(&x) - -4. / 2.).abs() < 1e-8);
-        assert!((grads.wrt(&y) - 4. * 1. / (2_f64.powi(2))).abs() < 1e-8);
+        assert_approx_eq!(grads.wrt(&a), 2.5 * 10.1_f64.powf(2.5 - 1.));
+        assert_approx_eq!(grads.wrt(&b), 10.1_f64.powf(2.5) * 10.1_f64.ln());
+        assert_approx_eq!(grads.wrt(&c), -1. / 2.);
+        assert_approx_eq!(grads.wrt(&x), -4. / 2.);
+        assert_approx_eq!(grads.wrt(&y), 4. * 1. / (2_f64.powi(2)));
     }
 
     #[test]
@@ -452,6 +641,53 @@ mod test {
         let params = (0..5).map(|x| g.add_var(x as f64)).collect::<Vec<_>>();
         let sum = params.iter().copied().sum::<Var>();
         let derivs = sum.grad();
-        assert_eq!(derivs.wrt(&params), vec![1.; 5]);
+        for i in derivs.wrt(&params) {
+            assert_approx_eq!(i, 1.);
+        }
+    }
+
+    #[test]
+    fn test_ad5() {
+        let g = Graph::new();
+        let a = g.add_var(2.);
+        let b = g.add_var(3.2);
+        let c = g.add_var(-4.5);
+        let res = a.exp2() / (b.powf(c) + 5.).sqrt();
+        let est_grads = res.grad().wrt(&[a, b, c]);
+        let true_grads = vec![
+            2_f64.exp2() * 2_f64.ln() / ((3.2_f64).powf(-4.5) + 5.).sqrt(),
+            -((2. - 1_f64).exp2() * (-4.5) * (3.2_f64).powf(-4.5 - 1.))
+                / ((3.2_f64.powf(-4.5) + 5.).powf(1.5)),
+            -((2. - 1_f64).exp2() * (3.2_f64).powf(-4.5) * (3.2_f64).ln())
+                / ((3.2_f64).powf(-4.5) + 5.).powf(1.5),
+        ];
+        for i in 0..3 {
+            assert_approx_eq!(est_grads[i], true_grads[i]);
+        }
+    }
+
+    #[test]
+    fn test_ad6() {
+        let g = Graph::new();
+        let a = g.add_var(10.1);
+        let b = g.add_var(2.5);
+        let c = g.add_var(4.0);
+        let x = g.add_var(-1.0);
+        let y = g.add_var(2.0);
+        let z = g.add_var(-5.);
+        let params = [a, b, c, x, y, z];
+        let res = a.tan() * b.log2() + c.exp() / (x.powi(2) + 2.) - y.powf(z);
+        let est_grads = res.grad().wrt(&params);
+        let true_grads = vec![
+            2.5_f64.ln() / (2_f64.ln() * 10.1_f64.cos().powi(2)),
+            10.1_f64.tan() / (2.5 * 2_f64.ln()),
+            4_f64.exp() / ((-1_f64).powi(2) + 2.),
+            -2. * 4_f64.exp() * (-1_f64) / ((-1_f64).powi(2) + 2.).powi(2),
+            -5_f64 * -2_f64.powf(-5. - 1.),
+            -2_f64.powf(-5.) * 2_f64.ln(),
+        ];
+        for i in 0..6 {
+            assert_approx_eq!(est_grads[i], true_grads[i]);
+        }
     }
 }

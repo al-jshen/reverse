@@ -1,6 +1,6 @@
 [package]
 name = "reverse"
-version = "0.1.6"
+version = "0.1.7"
 edition = "2018"
 authors = ["Jeff Shen <jshen2014@hotmail.com>"]
 license = "MIT OR Apache-2.0"
@@ -14,5 +14,9 @@ categories = ["science"]
 [dependencies]
 reverse_differentiable = { version = "0.1", optional = true, path = "../reverse_differentiable"}
 
+[dev-dependencies]
+approx_eq = "0.1"
+
 [features]
 diff = ["reverse_differentiable"]
+
