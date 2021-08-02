@@ -36,7 +36,7 @@ impl Graph {
             nodes: RefCell::new(vec![]),
         }
     }
-    pub(crate) fn len(&self) -> usize {
+    pub fn len(&self) -> usize {
         self.nodes.borrow().len()
     }
     pub(crate) fn add_node(&self, loc1: usize, loc2: usize, grad1: f64, grad2: f64) -> usize {
