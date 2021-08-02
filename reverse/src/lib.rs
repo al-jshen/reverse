@@ -92,55 +92,47 @@ impl<'a> Var<'a> {
         }
     }
     pub fn sin(&self) -> Self {
-        let val = self.val.sin();
-        let m = self.graph.add_var(val);
         Self {
-            val,
+            val: self.val.sin(),
             location: self
                 .graph
-                .add_node(self.location, m.location, self.val.cos(), 0.),
+                .add_node(self.location, self.location, self.val.cos(), 0.),
             graph: self.graph,
         }
     }
     pub fn cos(&self) -> Self {
-        let val = self.val.cos();
-        let m = self.graph.add_var(val);
         Self {
-            val,
+            val: self.val.cos(),
             location: self
                 .graph
-                .add_node(self.location, m.location, -self.val.sin(), 0.),
+                .add_node(self.location, self.location, -self.val.sin(), 0.),
             graph: self.graph,
         }
     }
     pub fn ln(&self) -> Self {
-        let val = self.val.ln();
-        let m = self.graph.add_var(val);
         Self {
-            val,
+            val: self.val.ln(),
             location: self
                 .graph
-                .add_node(self.location, m.location, 1. / self.val, 0.),
+                .add_node(self.location, self.location, 1. / self.val, 0.),
             graph: self.graph,
         }
     }
     pub fn exp(&self) -> Self {
-        let val = self.val.exp();
-        let m = self.graph.add_var(val);
         Self {
-            val,
-            location: self.graph.add_node(self.location, m.location, self.val, 0.),
+            val: self.val.exp(),
+            location: self
+                .graph
+                .add_node(self.location, self.location, self.val, 0.),
             graph: self.graph,
         }
     }
     pub fn sqrt(&self) -> Self {
-        let val = self.val.sqrt();
-        let m = self.graph.add_var(val);
         Self {
-            val,
+            val: self.val.sqrt(),
             location: self.graph.add_node(
                 self.location,
-                m.location,
+                self.location,
                 1. / (2. * self.val.sqrt()),
                 0.,
             ),
@@ -149,12 +141,11 @@ impl<'a> Var<'a> {
     }
     pub fn abs(&self) -> Self {
         let val = self.val.abs();
-        let m = self.graph.add_var(val);
         Self {
             val,
             location: self.graph.add_node(
                 self.location,
-                m.location,
+                self.location,
                 if self.val == 0. {
                     f64::NAN
                 } else {
@@ -166,13 +157,11 @@ impl<'a> Var<'a> {
         }
     }
     pub fn powi(&self, n: i32) -> Self {
-        let val = self.val.powi(n);
-        let m = self.graph.add_var(val);
         Self {
-            val,
+            val: self.val.powi(n),
             location: self.graph.add_node(
                 self.location,
-                m.location,
+                self.location,
                 (n - 1) as f64 * self.val.powi(n - 1),
                 0.,
             ),
@@ -239,10 +228,9 @@ impl<'a> Add<Var<'a>> for Var<'a> {
 impl<'a> Add<f64> for Var<'a> {
     type Output = Self;
     fn add(self, rhs: f64) -> Self::Output {
-        let rhs_var = self.graph.add_var(rhs);
         Self::Output {
             val: self.val + rhs,
-            location: self.graph.add_node(self.location, rhs_var.location, 1., 0.),
+            location: self.graph.add_node(self.location, self.location, 1., 0.),
             graph: self.graph,
         }
     }
@@ -272,10 +260,9 @@ impl<'a> Sub<f64> for Var<'a> {
 impl<'a> Sub<Var<'a>> for f64 {
     type Output = Var<'a>;
     fn sub(self, rhs: Var<'a>) -> Self::Output {
-        let lhs_var = rhs.graph.add_var(self);
         Self::Output {
             val: self - rhs.val,
-            location: rhs.graph.add_node(lhs_var.location, rhs.location, 0., 1.),
+            location: rhs.graph.add_node(rhs.location, rhs.location, 0., 1.),
             graph: rhs.graph,
         }
     }
@@ -298,12 +285,9 @@ impl<'a> Mul<Var<'a>> for Var<'a> {
 impl<'a> Mul<f64> for Var<'a> {
     type Output = Self;
     fn mul(self, rhs: f64) -> Self::Output {
-        let rhs_var = self.graph.add_var(rhs);
         Self::Output {
             val: self.val * rhs,
-            location: self
-                .graph
-                .add_node(self.location, rhs_var.location, rhs, 0.),
+            location: self.graph.add_node(self.location, self.location, rhs, 0.),
             graph: self.graph,
         }
     }
@@ -333,12 +317,11 @@ impl<'a> Div<f64> for Var<'a> {
 impl<'a> Div<Var<'a>> for f64 {
     type Output = Var<'a>;
     fn div(self, rhs: Var<'a>) -> Self::Output {
-        let lhs_var = rhs.graph.add_var(self);
         Self::Output {
             val: self / rhs.val,
             location: rhs
                 .graph
-                .add_node(lhs_var.location, rhs.location, 0., -1. / rhs.val),
+                .add_node(rhs.location, rhs.location, 0., -1. / rhs.val),
             graph: rhs.graph,
         }
     }
@@ -369,13 +352,11 @@ impl<'a> Powf<Var<'a>> for Var<'a> {
 impl<'a> Powf<f64> for Var<'a> {
     type Output = Var<'a>;
     fn powf(&self, n: f64) -> Self::Output {
-        let val = f64::powf(self.val, n);
-        let m = self.graph.add_var(val);
         Self {
-            val,
+            val: f64::powf(self.val, n),
             location: self.graph.add_node(
                 self.location,
-                m.location,
+                self.location,
                 n * f64::powf(self.val, n - 1.),
                 0.,
             ),
@@ -387,13 +368,11 @@ impl<'a> Powf<f64> for Var<'a> {
 impl<'a> Powf<Var<'a>> for f64 {
     type Output = Var<'a>;
     fn powf(&self, rhs: Var<'a>) -> Self::Output {
-        let val = f64::powf(*self, rhs.val);
-        let m = rhs.graph.add_var(val);
         Self::Output {
-            val,
+            val: f64::powf(*self, rhs.val),
             location: rhs.graph.add_node(
                 rhs.location,
-                m.location,
+                rhs.location,
                 0.,
                 rhs.val * f64::powf(*self, rhs.val - 1.),
             ),
