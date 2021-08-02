@@ -62,6 +62,9 @@ impl Graph {
             .iter_mut()
             .for_each(|n| n.gradients = [0., 0.]);
     }
+    pub fn clear(&self) {
+        self.nodes.borrow_mut().clear();
+    }
 }
 
 impl<'a> Var<'a> {
