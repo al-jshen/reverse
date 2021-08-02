@@ -1,3 +1,29 @@
 # reverse
 
-Reverse mode automatic differentiation in Rust. 
+[![Crates.io](https://img.shields.io/crates/v/reverse.svg?style=for-the-badge&color=fc8d62&logo=rust)](https://crates.io/crates/reverse)
+[![Documentation](https://img.shields.io/badge/docs.rs-reverse-5E81AC?style=for-the-badge&labelColor=555555&logoColor=white)](https://docs.rs/reverse)
+![License](https://img.shields.io/crates/l/reverse?label=License&style=for-the-badge)
+
+Reverse mode automatic differentiation in Rust.
+
+To use this in your crate, add the following to `Cargo.toml`:
+
+```rust
+[dependencies]
+reverse = "0.1"
+```
+
+## Examples
+
+```rust
+use reverse::*;
+
+let graph = Graph::new();
+let a = graph.add_var(2.5);
+let b = graph.add_var(14.);
+let c = (a.sin() + b.ln() * 3.) - 5.;
+let gradients = c.backward();
+
+assert_eq!(gradients.wrt(&a), 2.5_f64.cos());
+assert_eq!(gradients.wrt(&b), 3. / 14.);
+```
