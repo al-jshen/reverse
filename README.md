@@ -30,15 +30,17 @@ fn main() {
 }
 ```
 
-## Features
+## Differentiable Functions
 
-There is an optional `diff` feature which activates a macro which automatically transforms functions to the right type so that they are differentiable. That is, functions that act on `f64`s can be used on differentiable variables without change.
+There is an optional `diff` feature that activates a macro to transform functions to the right type so that they are differentiable. That is, functions that act on `f64`s can be used on differentiable variables without change, and without needing to specify the (not simple) correct type. 
 
 To use this, add the following to `Cargo.toml`:
 
 ```rust
 reverse = { version = "0.1", features = ["diff"] }
 ```
+
+Functions must have the type `Fn(&[f64], &[&[f64]]) -> f64`, where the first argument contains the differentiable parameters and the second argument contains arbitrary arrays of data. 
 
 ### Example
 
