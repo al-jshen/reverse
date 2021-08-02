@@ -23,7 +23,7 @@ fn main() {
   let a = graph.add_var(2.5);
   let b = graph.add_var(14.);
   let c = (a.sin().powi(2) + b.ln() * 3.) - 5.;
-  let gradients = c.backward();
+  let gradients = c.grad();
 
   assert_eq!(gradients.wrt(&a), (2. * 2.5).sin());
   assert_eq!(gradients.wrt(&b), 3. / 14.);
@@ -56,7 +56,7 @@ fn main() {
 
     // you can track gradients through the function as usual!
     let res = addmul(&[a, b], &[&[4.]]);
-    let grad = res.backward();
+    let grad = res.grad();
 
     assert_eq!(grad.wrt(&a), 1.);
     assert_eq!(grad.wrt(&b), 4.);
