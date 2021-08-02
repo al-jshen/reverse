@@ -7,6 +7,7 @@ pub use reverse_differentiable::differentiable;
 
 use std::{
     cell::RefCell,
+    fmt::Display,
     iter::Sum,
     ops::{Add, Div, Mul, Neg, Sub},
 };
@@ -176,6 +177,12 @@ impl<'a> Var<'a> {
             ),
             graph: self.graph,
         }
+    }
+}
+
+impl<'a> Display for Var<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.val)
     }
 }
 
