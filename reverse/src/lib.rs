@@ -440,7 +440,7 @@ impl<'a> Sub<Var<'a>> for f64 {
     fn sub(self, rhs: Var<'a>) -> Self::Output {
         Self::Output {
             val: self - rhs.val,
-            location: rhs.graph.add_node(rhs.location, rhs.location, 0., 1.),
+            location: rhs.graph.add_node(rhs.location, rhs.location, 0., -1.),
             graph: rhs.graph,
         }
     }
@@ -689,5 +689,64 @@ mod test {
         for i in 0..6 {
             assert_approx_eq!(est_grads[i], true_grads[i]);
         }
+    }
+
+    #[test]
+    fn test_ad7() {
+        let g = Graph::new();
+        let v = g.add_var(0.5);
+
+        let res = v.powi(2) + 5.;
+        let grad = res.grad().wrt(&v);
+        assert_approx_eq!(grad, 2. * 0.5);
+
+        let res = (v.powi(2) + 5.).powi(2);
+        let grad = res.grad().wrt(&v);
+        assert_approx_eq!(grad, 4. * 0.5 * (0.5_f64.powi(2) + 5.));
+
+        let res = (v.powi(2) + 5.).powi(2) / 2.;
+        let grad = res.grad().wrt(&v);
+        assert_approx_eq!(grad, 2. * 0.5 * (0.5_f64.powi(2) + 5.));
+
+        let res = (v.powi(2) + 5.).powi(2) / 2. - v;
+        let grad = res.grad().wrt(&v);
+        assert_approx_eq!(grad, 2. * 0.5 * (0.5_f64.powi(2) + 5.) - 1.);
+
+        let res = (v.powi(2) + 5.).powi(2) / 2. - v.powi(3);
+        let grad = res.grad().wrt(&v);
+        assert_approx_eq!(grad, 0.5 * (2. * 0.5_f64.powi(2) - 3. * 0.5 + 10.));
+
+        let res = ((v.powi(2) + 5.).powi(2) / 2. - v.powi(3)).powi(2);
+        let grad = res.grad().wrt(&v);
+        assert_approx_eq!(
+            grad,
+            0.5 * (2. * 0.5_f64.powi(2) - 3. * 0.5 + 10.)
+                * (0.5_f64.powi(4) - 2. * 0.5_f64.powi(3) + 10. * 0.5_f64.powi(2) + 25.)
+        );
+    }
+
+    #[test]
+    fn test_rosenbrock() {
+        let g = Graph::new();
+        let x = g.add_var(5.);
+        let y = g.add_var(-2.);
+
+        let res = (1. - x).powi(2);
+        let grad = res.grad().wrt(&[x, y]);
+        assert_approx_eq!(grad[0], -2. * (1. - 5.));
+        assert_approx_eq!(grad[1], 0.);
+
+        let res = 100. * (y - x.powi(2)).powi(2);
+        let grad = res.grad().wrt(&[x, y]);
+        assert_approx_eq!(grad[0], -400. * 5. * (-2. - 5_f64.powi(2)));
+        assert_approx_eq!(grad[1], 200. * (-2. - 5_f64.powi(2)));
+
+        let res = (1. - x).powi(2) + 100. * (y - x.powi(2)).powi(2);
+        let grad = res.grad().wrt(&[x, y]);
+        assert_approx_eq!(
+            grad[0],
+            2. * (200. * 5_f64.powi(3) - 200. * 5. * -2. + 5. - 1.)
+        );
+        assert_approx_eq!(grad[1], 200. * (-2. - 5_f64.powi(2)));
     }
 }
