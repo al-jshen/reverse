@@ -22,17 +22,17 @@ fn main() {
   let graph = Graph::new();
   let a = graph.add_var(2.5);
   let b = graph.add_var(14.);
-  let c = (a.sin() + b.ln() * 3.) - 5.;
+  let c = (a.sin().powi(2) + b.ln() * 3.) - 5.;
   let gradients = c.backward();
 
-  assert_eq!(gradients.wrt(&a), 2.5_f64.cos());
+  assert_eq!(gradients.wrt(&a), (2. * 2.5).sin());
   assert_eq!(gradients.wrt(&b), 3. / 14.);
 }
 ```
 
 ## Differentiable Functions
 
-There is an optional `diff` feature that activates a macro to transform functions to the right type so that they are differentiable. That is, functions that act on `f64`s can be used on differentiable variables without change, and without needing to specify the (not simple) correct type. 
+There is an optional `diff` feature that activates a macro to transform functions to the right type so that they are differentiable. That is, functions that act on `f64`s can be used on differentiable variables without change, and without needing to specify the (not simple) correct type.
 
 To use this, add the following to `Cargo.toml`:
 
@@ -40,7 +40,7 @@ To use this, add the following to `Cargo.toml`:
 reverse = { version = "0.1", features = ["diff"] }
 ```
 
-Functions must have the type `Fn(&[f64], &[&[f64]]) -> f64`, where the first argument contains the differentiable parameters and the second argument contains arbitrary arrays of data. 
+Functions must have the type `Fn(&[f64], &[&[f64]]) -> f64`, where the first argument contains the differentiable parameters and the second argument contains arbitrary arrays of data.
 
 ### Example
 
