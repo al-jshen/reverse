@@ -56,6 +56,9 @@ impl Graph {
             graph: self,
         }
     }
+    pub fn clear(&self) {
+        self.nodes.borrow_mut().clear();
+    }
 }
 
 impl<'a> Var<'a> {
