@@ -32,7 +32,7 @@ fn main() {
 
 ## Differentiable Functions
 
-There is an optional `diff` feature that activates a macro to transform functions to the right type so that they are differentiable. That is, functions that act on `f64`s can be used on differentiable variables without change, and without needing to specify the (not simple) correct type.
+There is an optional `diff` feature that activates a macro to transform functions so that they are differentiable. That is, functions that act on `f64`s can be used without change on `Var`s, and without needing to specify the (not simple) correct type.
 
 To use this, add the following to `Cargo.toml`:
 
@@ -40,7 +40,7 @@ To use this, add the following to `Cargo.toml`:
 reverse = { version = "0.1", features = ["diff"] }
 ```
 
-Functions must have the type `Fn(&[f64], &[&[f64]]) -> f64`, where the first argument contains the differentiable parameters and the second argument contains arbitrary arrays of data.
+Functions must have the type `Fn(&[f64], &[&[f64]]) -> f64`, where the first argument contains the differentiable parameters and the second argument contains arbitrary arrays of data. 
 
 ### Example
 
@@ -63,6 +63,7 @@ fn main() {
 }
 
 // function must have these argument types but can be arbitrarily complex
+// apply computations to params and data as if they were f64s!
 #[differentiable]
 fn addmul(params: &[f64], data: &[&[f64]]) -> f64 {
     params[0] + data[0][0] * params[1]
