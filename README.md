@@ -18,12 +18,14 @@ reverse = "0.1"
 ```rust
 use reverse::*;
 
-let graph = Graph::new();
-let a = graph.add_var(2.5);
-let b = graph.add_var(14.);
-let c = (a.sin() + b.ln() * 3.) - 5.;
-let gradients = c.backward();
+fn main() {
+  let graph = Graph::new();
+  let a = graph.add_var(2.5);
+  let b = graph.add_var(14.);
+  let c = (a.sin() + b.ln() * 3.) - 5.;
+  let gradients = c.backward();
 
-assert_eq!(gradients.wrt(&a), 2.5_f64.cos());
-assert_eq!(gradients.wrt(&b), 3. / 14.);
+  assert_eq!(gradients.wrt(&a), 2.5_f64.cos());
+  assert_eq!(gradients.wrt(&b), 3. / 14.);
+}
 ```
