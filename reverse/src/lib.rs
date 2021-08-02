@@ -39,10 +39,10 @@ impl Graph {
             nodes: RefCell::new(vec![]),
         }
     }
-    pub fn len(&self) -> usize {
+    pub(crate) fn len(&self) -> usize {
         self.nodes.borrow().len()
     }
-    pub fn add_node(&self, loc1: usize, loc2: usize, grad1: f64, grad2: f64) -> usize {
+    pub(crate) fn add_node(&self, loc1: usize, loc2: usize, grad1: f64, grad2: f64) -> usize {
         let mut nodes = self.nodes.borrow_mut();
         let n = nodes.len();
         nodes.push(Node {

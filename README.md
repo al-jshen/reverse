@@ -51,8 +51,13 @@ fn main() {
     let graph = Graph::new();
     let a = graph.add_var(5.);
     let b = graph.add_var(2.);
-    let res = addmul(&[a, b], &[&[1.]]);
-    println!("{:?}", res.backward());
+
+    // you can track gradients through the function as usual!
+    let res = addmul(&[a, b], &[&[4.]]);
+    let grad = res.backward();
+
+    assert_eq!(grad.wrt(&a), 1.);
+    assert_eq!(grad.wrt(&b), 4.);
 }
 
 // function must have these argument types but can be arbitrarily complex
