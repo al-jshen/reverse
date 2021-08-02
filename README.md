@@ -29,3 +29,35 @@ fn main() {
   assert_eq!(gradients.wrt(&b), 3. / 14.);
 }
 ```
+
+## Features
+
+There is an optional `diff` feature which activates a macro which automatically transforms functions to the right type so that they are differentiable. That is, functions that act on `f64`s can be used on differentiable variables without change.
+
+To use this, add the following to `Cargo.toml`:
+
+```rust
+reverse = { version = "0.1", features = ["diff"] }
+```
+
+### Example
+
+Here is an example of what the feature allows you to do:
+
+```rust
+use reverse::*;
+
+fn main() {
+    let graph = Graph::new();
+    let a = graph.add_var(5.);
+    let b = graph.add_var(2.);
+    let res = addmul(&[a, b], &[&[1.]]);
+    println!("{:?}", res.backward());
+}
+
+// function must have these argument types
+#[differentiable]
+fn addmul(params: &[f64], data: &[&[f64]]) -> f64 {
+    params[0] + data[0][0] * params[1]
+}
+```
