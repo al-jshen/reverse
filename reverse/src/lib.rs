@@ -162,6 +162,20 @@ impl<'a> Var<'a> {
             graph: self.graph,
         }
     }
+    pub fn powi(&self, n: i32) -> Self {
+        let val = self.val.powi(n);
+        let m = self.graph.add_var(val);
+        Self {
+            val,
+            location: self.graph.add_node(
+                self.location,
+                m.location,
+                (n - 1) as f64 * self.val.powi(n - 1),
+                0.,
+            ),
+            graph: self.graph,
+        }
+    }
 }
 
 impl Gradient {
@@ -297,6 +311,64 @@ impl<'a> Div<Var<'a>> for f64 {
     }
 }
 
+pub trait Powf<T> {
+    type Output;
+    fn powf(&self, other: T) -> Self::Output;
+}
+
+impl<'a> Powf<Var<'a>> for Var<'a> {
+    type Output = Var<'a>;
+    fn powf(&self, rhs: Var<'a>) -> Self::Output {
+        assert_eq!(self.graph as *const Graph, rhs.graph as *const Graph);
+        Self {
+            val: self.val.powf(rhs.val),
+            location: self.graph.add_node(
+                self.location,
+                rhs.location,
+                rhs.val * f64::powf(self.val, rhs.val - 1.),
+                f64::powf(self.val, rhs.val) * f64::ln(self.val),
+            ),
+            graph: self.graph,
+        }
+    }
+}
+
+impl<'a> Powf<f64> for Var<'a> {
+    type Output = Var<'a>;
+    fn powf(&self, n: f64) -> Self::Output {
+        let val = f64::powf(self.val, n);
+        let m = self.graph.add_var(val);
+        Self {
+            val,
+            location: self.graph.add_node(
+                self.location,
+                m.location,
+                n * f64::powf(self.val, n - 1.),
+                0.,
+            ),
+            graph: self.graph,
+        }
+    }
+}
+
+impl<'a> Powf<Var<'a>> for f64 {
+    type Output = Var<'a>;
+    fn powf(&self, rhs: Var<'a>) -> Self::Output {
+        let val = f64::powf(*self, rhs.val);
+        let m = rhs.graph.add_var(val);
+        Self::Output {
+            val,
+            location: rhs.graph.add_node(
+                rhs.location,
+                m.location,
+                0.,
+                rhs.val * f64::powf(*self, rhs.val - 1.),
+            ),
+            graph: rhs.graph,
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -333,5 +405,22 @@ mod test {
         let grads = y.backward();
         assert!((grads.wrt(&a) - -153284.83150602411).abs() < 1e-8);
         assert!((grads.wrt(&b) - 3815.0389441500993).abs() < 1e-8);
+    }
+
+    #[test]
+    fn test_ad3() {
+        let g = Graph::new();
+        let a = g.add_var(10.1);
+        let b = g.add_var(2.5);
+        let c = g.add_var(4.0);
+        let x = g.add_var(1.0);
+        let y = g.add_var(2.0);
+        let res = a.powf(b) - c * x / y;
+        let grads = res.backward();
+        assert!((grads.wrt(&a) - 2.5 * 10.1_f64.powf(2.5 - 1.)).abs() < 1e-8);
+        assert!((grads.wrt(&b) - 10.1_f64.powf(2.5) * 10.1_f64.ln()).abs() < 1e-8);
+        assert!((grads.wrt(&c) - -1. / 2.).abs() < 1e-8);
+        assert!((grads.wrt(&x) - -4. / 2.).abs() < 1e-8);
+        assert!((grads.wrt(&y) - 4. * 1. / (2_f64.powi(2))).abs() < 1e-8);
     }
 }
