@@ -86,7 +86,7 @@ pub fn differentiable(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let replacement = format!(
         "
         use reverse::Var;
-        {} fn {}<'a>({}: &[Var<'a>], {}: &[&[Var<'a>]]) -> Var<'a> {{
+        {} fn {}<'a>({}: &[Var<'a>], {}: &[&[f64]]) -> Var<'a> {{
             {}
         }} ",
         visibility, function_name, params_ident, data_ident, body
