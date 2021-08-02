@@ -81,13 +81,14 @@ impl<'a> Var<'a> {
         derivs
     }
     pub fn recip(&self) -> Self {
-        let val = self.val.recip();
-        let m = self.graph.add_var(val);
         Self {
-            val,
-            location: self
-                .graph
-                .add_node(self.location, m.location, -1. / (self.val.powi(2)), 0.),
+            val: self.val.recip(),
+            location: self.graph.add_node(
+                self.location,
+                self.location,
+                -1. / (self.val.powi(2)),
+                0.,
+            ),
             graph: self.graph,
         }
     }
