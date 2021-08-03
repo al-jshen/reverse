@@ -30,7 +30,7 @@ fn main() {
 }
 ```
 
-The main type is `Var<'a>`, so you can define functions that take this in and the function will be differentiable. For example:
+The main type is `Var<'a>`, so you can define functions that take this as an input (possibly along with other `f64` arguments) and also returns this as an output, and the function will be differentiable. For example:
 
 ```rust
 use reverse::*;
