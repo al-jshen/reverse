@@ -22,15 +22,15 @@ pub(crate) struct Node {
 pub struct Var<'a> {
     val: f64,
     location: usize,
-    graph: &'a Graph,
+    tape: &'a Tape,
 }
 
 #[derive(Debug, Clone)]
-pub struct Graph {
+pub struct Tape {
     nodes: RefCell<Vec<Node>>,
 }
 
-impl Graph {
+impl Tape {
     pub fn new() -> Self {
         Self {
             nodes: RefCell::new(vec![]),
@@ -53,7 +53,7 @@ impl Graph {
         Var {
             val,
             location: self.add_node(len, len, 0., 0.),
-            graph: self,
+            tape: self,
         }
     }
     pub fn add_vars<'a>(&'a self, vals: &[f64]) -> Vec<Var<'a>> {
@@ -75,11 +75,11 @@ impl<'a> Var<'a> {
         self.val
     }
     pub fn grad(&self) -> Vec<f64> {
-        let n = self.graph.len();
+        let n = self.tape.len();
         let mut derivs = vec![0.; n];
         derivs[self.location] = 1.;
 
-        for (idx, n) in self.graph.nodes.borrow().iter().enumerate().rev() {
+        for (idx, n) in self.tape.nodes.borrow().iter().enumerate().rev() {
             derivs[n.dependencies[0]] += n.weights[0] * derivs[idx];
             derivs[n.dependencies[1]] += n.weights[1] * derivs[idx];
         }
@@ -89,64 +89,64 @@ impl<'a> Var<'a> {
     pub fn recip(&self) -> Self {
         Self {
             val: self.val.recip(),
-            location: self.graph.add_node(
+            location: self.tape.add_node(
                 self.location,
                 self.location,
                 -1. / (self.val.powi(2)),
                 0.,
             ),
-            graph: self.graph,
+            tape: self.tape,
         }
     }
     pub fn sin(&self) -> Self {
         Self {
             val: self.val.sin(),
             location: self
-                .graph
+                .tape
                 .add_node(self.location, self.location, self.val.cos(), 0.),
-            graph: self.graph,
+            tape: self.tape,
         }
     }
     pub fn cos(&self) -> Self {
         Self {
             val: self.val.cos(),
             location: self
-                .graph
+                .tape
                 .add_node(self.location, self.location, -self.val.sin(), 0.),
-            graph: self.graph,
+            tape: self.tape,
         }
     }
     pub fn tan(&self) -> Self {
         Self {
             val: self.val.tan(),
-            location: self.graph.add_node(
+            location: self.tape.add_node(
                 self.location,
                 self.location,
                 1. / self.val.cos().powi(2),
                 0.,
             ),
-            graph: self.graph,
+            tape: self.tape,
         }
     }
     pub fn ln(&self) -> Self {
         Self {
             val: self.val.ln(),
             location: self
-                .graph
+                .tape
                 .add_node(self.location, self.location, 1. / self.val, 0.),
-            graph: self.graph,
+            tape: self.tape,
         }
     }
     pub fn log(&self, base: f64) -> Self {
         Self {
             val: self.val.log(base),
-            location: self.graph.add_node(
+            location: self.tape.add_node(
                 self.location,
                 self.location,
                 1. / (self.val * base.ln()),
                 0.,
             ),
-            graph: self.graph,
+            tape: self.tape,
         }
     }
     pub fn log10(&self) -> Self {
@@ -159,144 +159,144 @@ impl<'a> Var<'a> {
         Self {
             val: self.val.ln_1p(),
             location: self
-                .graph
+                .tape
                 .add_node(self.location, self.location, 1. / (1. + self.val), 0.),
-            graph: self.graph,
+            tape: self.tape,
         }
     }
     pub fn asin(&self) -> Self {
         Self {
             val: self.val.asin(),
-            location: self.graph.add_node(
+            location: self.tape.add_node(
                 self.location,
                 self.location,
                 1. / (1. - self.val.powi(2)).sqrt(),
                 0.,
             ),
-            graph: self.graph,
+            tape: self.tape,
         }
     }
     pub fn acos(&self) -> Self {
         Self {
             val: self.val.acos(),
-            location: self.graph.add_node(
+            location: self.tape.add_node(
                 self.location,
                 self.location,
                 -1. / (1. - self.val.powi(2)).sqrt(),
                 0.,
             ),
-            graph: self.graph,
+            tape: self.tape,
         }
     }
     pub fn atan(&self) -> Self {
         Self {
             val: self.val.atan(),
-            location: self.graph.add_node(
+            location: self.tape.add_node(
                 self.location,
                 self.location,
                 1. / (1. + self.val.powi(2)),
                 0.,
             ),
-            graph: self.graph,
+            tape: self.tape,
         }
     }
     pub fn sinh(&self) -> Self {
         Self {
             val: self.val.sinh(),
             location: self
-                .graph
+                .tape
                 .add_node(self.location, self.location, self.val.cosh(), 0.),
-            graph: self.graph,
+            tape: self.tape,
         }
     }
     pub fn cosh(&self) -> Self {
         Self {
             val: self.val.cosh(),
             location: self
-                .graph
+                .tape
                 .add_node(self.location, self.location, self.val.sinh(), 0.),
-            graph: self.graph,
+            tape: self.tape,
         }
     }
     pub fn tanh(&self) -> Self {
         Self {
             val: self.val.tanh(),
-            location: self.graph.add_node(
+            location: self.tape.add_node(
                 self.location,
                 self.location,
                 1. / (self.val.cosh().powi(2)),
                 0.,
             ),
-            graph: self.graph,
+            tape: self.tape,
         }
     }
     pub fn asinh(&self) -> Self {
         Self {
             val: self.val.asinh(),
-            location: self.graph.add_node(
+            location: self.tape.add_node(
                 self.location,
                 self.location,
                 1. / (1. + self.val.powi(2)).sqrt(),
                 0.,
             ),
-            graph: self.graph,
+            tape: self.tape,
         }
     }
     pub fn acosh(&self) -> Self {
         Self {
             val: self.val.acosh(),
-            location: self.graph.add_node(
+            location: self.tape.add_node(
                 self.location,
                 self.location,
                 1. / (self.val.powi(2) - 1.).sqrt(),
                 0.,
             ),
-            graph: self.graph,
+            tape: self.tape,
         }
     }
     pub fn atanh(&self) -> Self {
         Self {
             val: self.val.atanh(),
-            location: self.graph.add_node(
+            location: self.tape.add_node(
                 self.location,
                 self.location,
                 1. / (1. - self.val.powi(2)),
                 0.,
             ),
-            graph: self.graph,
+            tape: self.tape,
         }
     }
     pub fn exp(&self) -> Self {
         Self {
             val: self.val.exp(),
             location: self
-                .graph
+                .tape
                 .add_node(self.location, self.location, self.val.exp(), 0.),
-            graph: self.graph,
+            tape: self.tape,
         }
     }
     pub fn exp2(self) -> Self {
         Self {
             val: self.val.exp2(),
-            location: self.graph.add_node(
+            location: self.tape.add_node(
                 self.location,
                 self.location,
                 self.val.exp2() * 2_f64.ln(),
                 0.,
             ),
-            graph: self.graph,
+            tape: self.tape,
         }
     }
     pub fn sqrt(&self) -> Self {
         Self {
             val: self.val.sqrt(),
-            location: self.graph.add_node(
+            location: self.tape.add_node(
                 self.location,
                 self.location,
                 1. / (2. * self.val.sqrt()),
                 0.,
             ),
-            graph: self.graph,
+            tape: self.tape,
         }
     }
     pub fn cbrt(&self) -> Self {
@@ -306,7 +306,7 @@ impl<'a> Var<'a> {
         let val = self.val.abs();
         Self {
             val,
-            location: self.graph.add_node(
+            location: self.tape.add_node(
                 self.location,
                 self.location,
                 if self.val == 0. {
@@ -316,19 +316,19 @@ impl<'a> Var<'a> {
                 },
                 0.,
             ),
-            graph: self.graph,
+            tape: self.tape,
         }
     }
     pub fn powi(&self, n: i32) -> Self {
         Self {
             val: self.val.powi(n),
-            location: self.graph.add_node(
+            location: self.tape.add_node(
                 self.location,
                 self.location,
                 n as f64 * self.val.powi(n - 1),
                 0.,
             ),
-            graph: self.graph,
+            tape: self.tape,
         }
     }
 }
@@ -421,11 +421,11 @@ impl<'a> Neg for Var<'a> {
 impl<'a> Add<Var<'a>> for Var<'a> {
     type Output = Self;
     fn add(self, rhs: Var<'a>) -> Self::Output {
-        assert_eq!(self.graph as *const Graph, rhs.graph as *const Graph);
+        assert_eq!(self.tape as *const Tape, rhs.tape as *const Tape);
         Self::Output {
             val: self.val + rhs.val,
-            location: self.graph.add_node(self.location, rhs.location, 1., 1.),
-            graph: self.graph,
+            location: self.tape.add_node(self.location, rhs.location, 1., 1.),
+            tape: self.tape,
         }
     }
 }
@@ -435,8 +435,8 @@ impl<'a> Add<f64> for Var<'a> {
     fn add(self, rhs: f64) -> Self::Output {
         Self::Output {
             val: self.val + rhs,
-            location: self.graph.add_node(self.location, self.location, 1., 0.),
-            graph: self.graph,
+            location: self.tape.add_node(self.location, self.location, 1., 0.),
+            tape: self.tape,
         }
     }
 }
@@ -467,8 +467,8 @@ impl<'a> Sub<Var<'a>> for f64 {
     fn sub(self, rhs: Var<'a>) -> Self::Output {
         Self::Output {
             val: self - rhs.val,
-            location: rhs.graph.add_node(rhs.location, rhs.location, 0., -1.),
-            graph: rhs.graph,
+            location: rhs.tape.add_node(rhs.location, rhs.location, 0., -1.),
+            tape: rhs.tape,
         }
     }
 }
@@ -476,13 +476,13 @@ impl<'a> Sub<Var<'a>> for f64 {
 impl<'a> Mul<Var<'a>> for Var<'a> {
     type Output = Self;
     fn mul(self, rhs: Var<'a>) -> Self::Output {
-        assert_eq!(self.graph as *const Graph, rhs.graph as *const Graph);
+        assert_eq!(self.tape as *const Tape, rhs.tape as *const Tape);
         Self::Output {
             val: self.val * rhs.val,
             location: self
-                .graph
+                .tape
                 .add_node(self.location, rhs.location, rhs.val, self.val),
-            graph: self.graph,
+            tape: self.tape,
         }
     }
 }
@@ -492,8 +492,8 @@ impl<'a> Mul<f64> for Var<'a> {
     fn mul(self, rhs: f64) -> Self::Output {
         Self::Output {
             val: self.val * rhs,
-            location: self.graph.add_node(self.location, self.location, rhs, 0.),
-            graph: self.graph,
+            location: self.tape.add_node(self.location, self.location, rhs, 0.),
+            tape: self.tape,
         }
     }
 }
@@ -525,9 +525,9 @@ impl<'a> Div<Var<'a>> for f64 {
         Self::Output {
             val: self / rhs.val,
             location: rhs
-                .graph
+                .tape
                 .add_node(rhs.location, rhs.location, 0., -1. / rhs.val),
-            graph: rhs.graph,
+            tape: rhs.tape,
         }
     }
 }
@@ -540,16 +540,16 @@ pub trait Powf<T> {
 impl<'a> Powf<Var<'a>> for Var<'a> {
     type Output = Var<'a>;
     fn powf(&self, rhs: Var<'a>) -> Self::Output {
-        assert_eq!(self.graph as *const Graph, rhs.graph as *const Graph);
+        assert_eq!(self.tape as *const Tape, rhs.tape as *const Tape);
         Self {
             val: self.val.powf(rhs.val),
-            location: self.graph.add_node(
+            location: self.tape.add_node(
                 self.location,
                 rhs.location,
                 rhs.val * f64::powf(self.val, rhs.val - 1.),
                 f64::powf(self.val, rhs.val) * f64::ln(self.val),
             ),
-            graph: self.graph,
+            tape: self.tape,
         }
     }
 }
@@ -559,13 +559,13 @@ impl<'a> Powf<f64> for Var<'a> {
     fn powf(&self, n: f64) -> Self::Output {
         Self {
             val: f64::powf(self.val, n),
-            location: self.graph.add_node(
+            location: self.tape.add_node(
                 self.location,
                 self.location,
                 n * f64::powf(self.val, n - 1.),
                 0.,
             ),
-            graph: self.graph,
+            tape: self.tape,
         }
     }
 }
@@ -575,13 +575,13 @@ impl<'a> Powf<Var<'a>> for f64 {
     fn powf(&self, rhs: Var<'a>) -> Self::Output {
         Self::Output {
             val: f64::powf(*self, rhs.val),
-            location: rhs.graph.add_node(
+            location: rhs.tape.add_node(
                 rhs.location,
                 rhs.location,
                 0.,
                 rhs.val * f64::powf(*self, rhs.val - 1.),
             ),
-            graph: rhs.graph,
+            tape: rhs.tape,
         }
     }
 }
@@ -599,7 +599,7 @@ mod test {
 
     #[test]
     fn test_ad0() {
-        let g = Graph::new();
+        let g = Tape::new();
         let a = g.add_var(2.);
         let b = a.exp() / 5.;
         let c = a.exp2() / 5.;
@@ -611,8 +611,8 @@ mod test {
 
     #[test]
     fn test_ad1() {
-        let graph = Graph::new();
-        let vars = (0..6).map(|x| graph.add_var(x as f64)).collect::<Vec<_>>();
+        let tape = Tape::new();
+        let vars = (0..6).map(|x| tape.add_var(x as f64)).collect::<Vec<_>>();
         let res =
             -vars[0] + vars[1].sin() * vars[2].ln() - vars[3] / vars[4] + 1.5 * vars[5].sqrt();
         let grads = res.grad();
@@ -636,7 +636,7 @@ mod test {
             (a / b - a) * (b / a + a + b) * (a - b)
         }
 
-        let g = Graph::new();
+        let g = Tape::new();
         let a = g.add_var(230.3);
         let b = g.add_var(33.2);
         let y = f(a, b);
@@ -647,7 +647,7 @@ mod test {
 
     #[test]
     fn test_ad3() {
-        let g = Graph::new();
+        let g = Tape::new();
         let a = g.add_var(10.1);
         let b = g.add_var(2.5);
         let c = g.add_var(4.0);
@@ -664,7 +664,7 @@ mod test {
 
     #[test]
     fn test_ad4() {
-        let g = Graph::new();
+        let g = Tape::new();
         let params = (0..5).map(|x| g.add_var(x as f64)).collect::<Vec<_>>();
         let sum = params.iter().copied().sum::<Var>();
         let derivs = sum.grad();
@@ -675,7 +675,7 @@ mod test {
 
     #[test]
     fn test_ad5() {
-        let g = Graph::new();
+        let g = Tape::new();
         let a = g.add_var(2.);
         let b = g.add_var(3.2);
         let c = g.add_var(-4.5);
@@ -695,7 +695,7 @@ mod test {
 
     #[test]
     fn test_ad6() {
-        let g = Graph::new();
+        let g = Tape::new();
         let a = g.add_var(10.1);
         let b = g.add_var(2.5);
         let c = g.add_var(4.0);
@@ -720,7 +720,7 @@ mod test {
 
     #[test]
     fn test_ad7() {
-        let g = Graph::new();
+        let g = Tape::new();
         let v = g.add_var(0.5);
 
         let res = v.powi(2) + 5.;
@@ -754,7 +754,7 @@ mod test {
 
     #[test]
     fn test_rosenbrock() {
-        let g = Graph::new();
+        let g = Tape::new();
         let x = g.add_var(5.);
         let y = g.add_var(-2.);
 

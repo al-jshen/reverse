@@ -4,7 +4,7 @@
 [![Documentation](https://img.shields.io/badge/docs.rs-reverse-5E81AC?style=for-the-badge&labelColor=555555&logoColor=white)](https://docs.rs/reverse)
 ![License](https://img.shields.io/crates/l/reverse?label=License&style=for-the-badge)
 
-Reverse mode automatic differentiation in Rust.
+Reverse mode automatic differentiation in Rust. The implementation uses a Wengert list (also called a tape).
 
 To use this in your crate, add the following to `Cargo.toml`:
 
@@ -19,9 +19,9 @@ reverse = "0.1"
 use reverse::*;
 
 fn main() {
-  let graph = Graph::new();
-  let a = graph.add_var(2.5);
-  let b = graph.add_var(14.);
+  let tape = Tape::new();
+  let a = tape.add_var(2.5);
+  let b = tape.add_var(14.);
   let c = (a.sin().powi(2) + b.ln() * 3.) - 5.;
   let gradients = c.grad();
 
@@ -36,8 +36,8 @@ The main type is `Var<'a>`, so you can define functions that take this in and th
 use reverse::*;
 
 fn main() {
-    let graph = Graph::new();
-    let params = graph.add_vars(&[5., 2., 0., 1.]);
+    let tape = Tape::new();
+    let params = tape.add_vars(&[5., 2., 0., 1.]);
     let result = diff_fn(&params);
     let gradients = result.grad();
     println!("{:?}", gradients.wrt(&params));
@@ -68,9 +68,9 @@ Here is an example of what the feature allows you to do:
 use reverse::*;
 
 fn main() {
-    let graph = Graph::new();
-    let a = graph.add_var(5.);
-    let b = graph.add_var(2.);
+    let tape = Tape::new();
+    let a = tape.add_var(5.);
+    let b = tape.add_var(2.);
 
     // you can track gradients through the function as usual!
     let res = addmul(&[a, b], &[&[4.]]);
