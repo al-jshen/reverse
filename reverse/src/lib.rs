@@ -336,6 +336,18 @@ impl<'a> Display for Var<'a> {
     }
 }
 
+impl<'a> PartialEq for Var<'a> {
+    fn eq(&self, other: &Self) -> bool {
+        self.val.eq(&other.val)
+    }
+}
+
+impl<'a> PartialOrd for Var<'a> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.val.partial_cmp(&other.val)
+    }
+}
+
 pub trait Gradient<T, S> {
     fn wrt(&self, v: T) -> S;
 }
