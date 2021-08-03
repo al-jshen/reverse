@@ -1,3 +1,41 @@
+//! # reverse
+//!
+//! `reverse` is a light-weight, zero-dependency crate for performing **reverse**-mode automatic
+//! differentiation in Rust. This is useful when you have functions with many inputs producing a
+//! small number of outputs, as the gradients for all inputs with respect to a particular output
+//! can be computed in a single pass.
+//!
+//! # Usage
+//!
+//! A tape (also called a Wengert list) is created with `Tape::new()`. Variables can then
+//! be added to the tape, either individually (`.add_var`) or as a slice (`.add_vars`).
+//! This yields differentiable variables with type `Var<'a>`.
+//!
+//! Differentiable variables can be manipulated like `f64`s, are tracked with the tape,
+//! and gradients with respect to other variables can be calculated. Operations can
+//! be performed between variables and normal `f64`s as well, and the `f64`s are treated as
+//! constants with no gradients.
+//!
+//! You can define functions that have `Var<'a>` as an input (potentially along with other fixed
+//! data of type `f64`) and as an output, and the function will be differentiable. For example:
+//!
+//! ```rust
+//! use reverse::*;
+//!
+//! fn main() {
+//!     let tape = Tape::new();
+//!     let params = tape.add_vars(&[5., 2., 0.]);
+//!     let data = [1., 2.];
+//!     let result = diff_fn(&params, &data);
+//!     let gradients = result.grad();
+//!     println!("{:?}", gradients.wrt(&params));
+//! }
+//!
+//! fn diff_fn<'a>(params: &[Var<'a>], data: &[f64]) -> Var<'a> {
+//!     params[0].powf(params[1]) + data[0].sin() - params[2].asinh() / data[1]
+//! }
+//! ```
+
 #[cfg(feature = "diff")]
 #[macro_use]
 extern crate reverse_differentiable;
@@ -19,23 +57,32 @@ pub(crate) struct Node {
 }
 
 #[derive(Debug, Clone, Copy)]
+/// Differentiable variable. This is the main type that users will interact with.
 pub struct Var<'a> {
+    /// Value of the variable.
     val: f64,
+    /// Location that can be referred to be nodes in the tape.
     location: usize,
+    /// Reference to a tape that this variable is associated with.
     tape: &'a Tape,
 }
 
 #[derive(Debug, Clone)]
+/// Tape (Wengert list) that tracks differentiable variables, intermediate values, and the
+/// operations applied to each.
 pub struct Tape {
+    /// Variables and operations that are tracked.
     nodes: RefCell<Vec<Node>>,
 }
 
 impl Tape {
+    /// Create a new tape.
     pub fn new() -> Self {
         Self {
             nodes: RefCell::new(vec![]),
         }
     }
+    /// Gets the number of nodes (differentiable variables and intermediate values) in the tape.
     pub fn len(&self) -> usize {
         self.nodes.borrow().len()
     }
@@ -48,6 +95,7 @@ impl Tape {
         });
         n
     }
+    /// Add a variable with value `val` to the tape. Returns a `Var<'a>` which can be used like an `f64`.
     pub fn add_var<'a>(&'a self, val: f64) -> Var<'a> {
         let len = self.len();
         Var {
@@ -56,24 +104,30 @@ impl Tape {
             tape: self,
         }
     }
+    /// Add a slice of variables to the tape. See `add_var` for details.
     pub fn add_vars<'a>(&'a self, vals: &[f64]) -> Vec<Var<'a>> {
         vals.iter().map(|&x| self.add_var(x)).collect()
     }
+    /// Zero out all the gradients in the tape.
     pub fn zero_grad(&self) {
         self.nodes
             .borrow_mut()
             .iter_mut()
             .for_each(|n| n.weights = [0., 0.]);
     }
+    /// Clear the tape by deleting all nodes (useful for clearing out intermediate values).
     pub fn clear(&self) {
         self.nodes.borrow_mut().clear();
     }
 }
 
 impl<'a> Var<'a> {
+    /// Get the value of the variable.
     pub fn val(&self) -> f64 {
         self.val
     }
+    /// Calculate the gradients of this variable with respect to all other (possibly intermediate)
+    /// variables that it depends on.
     pub fn grad(&self) -> Vec<f64> {
         let n = self.tape.len();
         let mut derivs = vec![0.; n];
@@ -363,16 +417,22 @@ impl<'a> PartialOrd<f64> for Var<'a> {
     }
 }
 
+/// Calculate gradients with respect to particular variables.
 pub trait Gradient<T, S> {
+    /// Calculate the gradient with respect to variable(s) `v`.
     fn wrt(&self, v: T) -> S;
 }
 
+/// Calculate the gradient with respect to variable `v`.
 impl<'a> Gradient<&Var<'a>, f64> for Vec<f64> {
     fn wrt(&self, v: &Var) -> f64 {
         self[v.location]
     }
 }
 
+/// Calculate the gradient with respect to all variables in `v`. Returns a vector, where the items
+/// in the vector are the gradients with respect to the variable in the original list `v`, in the
+/// same order.
 impl<'a> Gradient<&Vec<Var<'a>>, Vec<f64>> for Vec<f64> {
     fn wrt(&self, v: &Vec<Var<'a>>) -> Vec<f64> {
         let mut jac = vec![];
@@ -383,6 +443,9 @@ impl<'a> Gradient<&Vec<Var<'a>>, Vec<f64>> for Vec<f64> {
     }
 }
 
+/// Calculate the gradient with respect to all variables in `v`. Returns a vector, where the items
+/// in the vector are the gradients with respect to the variable in the original list `v`, in the
+/// same order.
 impl<'a> Gradient<&[Var<'a>], Vec<f64>> for Vec<f64> {
     fn wrt(&self, v: &[Var<'a>]) -> Vec<f64> {
         let mut jac = vec![];
@@ -392,6 +455,10 @@ impl<'a> Gradient<&[Var<'a>], Vec<f64>> for Vec<f64> {
         jac
     }
 }
+
+/// Calculate the gradient with respect to all variables in `v`. Returns a vector, where the items
+/// in the vector are the gradients with respect to the variable in the original list `v`, in the
+/// same order.
 impl<'a, const N: usize> Gradient<[Var<'a>; N], Vec<f64>> for Vec<f64> {
     fn wrt(&self, v: [Var<'a>; N]) -> Vec<f64> {
         let mut jac = vec![];
@@ -401,6 +468,10 @@ impl<'a, const N: usize> Gradient<[Var<'a>; N], Vec<f64>> for Vec<f64> {
         jac
     }
 }
+
+/// Calculate the gradient with respect to all variables in `v`. Returns a vector, where the items
+/// in the vector are the gradients with respect to the variable in the original list `v`, in the
+/// same order.
 impl<'a, const N: usize> Gradient<&[Var<'a>; N], Vec<f64>> for Vec<f64> {
     fn wrt(&self, v: &[Var<'a>; N]) -> Vec<f64> {
         let mut jac = vec![];
@@ -532,8 +603,10 @@ impl<'a> Div<Var<'a>> for f64 {
     }
 }
 
+/// Trait for calculating expressions and tracking gradients for float power operations.
 pub trait Powf<T> {
     type Output;
+    /// Calculate `powf` for self, where `other` is the power to raise `self` to.
     fn powf(&self, other: T) -> Self::Output;
 }
 
