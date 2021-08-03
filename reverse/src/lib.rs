@@ -348,6 +348,18 @@ impl<'a> PartialOrd for Var<'a> {
     }
 }
 
+impl<'a> PartialEq<f64> for Var<'a> {
+    fn eq(&self, other: &f64) -> bool {
+        self.val.eq(other)
+    }
+}
+
+impl<'a> PartialOrd<f64> for Var<'a> {
+    fn partial_cmp(&self, other: &f64) -> Option<std::cmp::Ordering> {
+        self.val.partial_cmp(other)
+    }
+}
+
 pub trait Gradient<T, S> {
     fn wrt(&self, v: T) -> S;
 }
