@@ -30,9 +30,31 @@ fn main() {
 }
 ```
 
+The main type is `Var<'a>`, so you can define functions that take this in and the function will be differentiable. For example:
+
+```rust
+use reverse::*;
+
+fn main() {
+    let graph = Graph::new();
+    let params = [5., 2., 0., 1.]
+        .iter()
+        .map(|&x| graph.add_var(x))
+        .collect::<Vec<_>>();
+    let result = diff_fn(&params);
+    let gradients = result.grad();
+    println!("{:?}", gradients.wrt(&params));
+}
+
+fn diff_fn<'a>(params: &[Var<'a>]) -> Var<'a> {
+    params[0].powf(params[1]) + params[2].sin() - params[3].asinh() / 2.
+}
+
+```
+
 ## Differentiable Functions
 
-There is an optional `diff` feature that activates a macro to transform functions so that they are differentiable. That is, functions that act on `f64`s can be used without change on `Var`s, and without needing to specify the (not simple) correct type.
+There is an optional `diff` feature that activates a convenience macro to transform certain functions so that they are differentiable. That is, functions that act on `f64`s can be used without change on `Var`s, and without needing to specify the type.
 
 To use this, add the following to `Cargo.toml`:
 
@@ -40,7 +62,7 @@ To use this, add the following to `Cargo.toml`:
 reverse = { version = "0.1", features = ["diff"] }
 ```
 
-Functions must have the type `Fn(&[f64], &[&[f64]]) -> f64`, where the first argument contains the differentiable parameters and the second argument contains arbitrary arrays of data. 
+Functions must have the type `Fn(&[f64], &[&[f64]]) -> f64`, where the first argument contains the differentiable parameters and the second argument contains arbitrary arrays of data.
 
 ### Example
 
@@ -63,7 +85,7 @@ fn main() {
 }
 
 // function must have these argument types but can be arbitrarily complex
-// apply computations to params and data as if they were f64s!
+// apply computations to params and data as if they were f64s
 #[differentiable]
 fn addmul(params: &[f64], data: &[&[f64]]) -> f64 {
     params[0] + data[0][0] * params[1]
