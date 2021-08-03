@@ -37,10 +37,7 @@ use reverse::*;
 
 fn main() {
     let graph = Graph::new();
-    let params = [5., 2., 0., 1.]
-        .iter()
-        .map(|&x| graph.add_var(x))
-        .collect::<Vec<_>>();
+    let params = graph.add_vars(&[5., 2., 0., 1.]);
     let result = diff_fn(&params);
     let gradients = result.grad();
     println!("{:?}", gradients.wrt(&params));
@@ -49,7 +46,6 @@ fn main() {
 fn diff_fn<'a>(params: &[Var<'a>]) -> Var<'a> {
     params[0].powf(params[1]) + params[2].sin() - params[3].asinh() / 2.
 }
-
 ```
 
 ## Differentiable Functions

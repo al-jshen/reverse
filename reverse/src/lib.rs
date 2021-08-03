@@ -56,6 +56,9 @@ impl Graph {
             graph: self,
         }
     }
+    pub fn add_vars<'a>(&'a self, vals: &[f64]) -> Vec<Var<'a>> {
+        vals.iter().map(|&x| self.add_var(x)).collect()
+    }
     pub fn zero_grad(&self) {
         self.nodes
             .borrow_mut()
