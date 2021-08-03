@@ -36,12 +36,7 @@
 //! }
 //! ```
 
-#[cfg(feature = "diff")]
-#[macro_use]
-extern crate reverse_differentiable;
-#[cfg(feature = "diff")]
-#[doc(hidden)]
-pub use reverse_differentiable::differentiable;
+#![allow(clippy::suspicious_arithmetic_impl)]
 
 use std::{
     cell::RefCell,
@@ -86,6 +81,10 @@ impl Tape {
     pub fn len(&self) -> usize {
         self.nodes.borrow().len()
     }
+    /// Checks whether the tape is empty.
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
     pub(crate) fn add_node(&self, loc1: usize, loc2: usize, grad1: f64, grad2: f64) -> usize {
         let mut nodes = self.nodes.borrow_mut();
         let n = nodes.len();
@@ -96,7 +95,7 @@ impl Tape {
         n
     }
     /// Add a variable with value `val` to the tape. Returns a `Var<'a>` which can be used like an `f64`.
-    pub fn add_var<'a>(&'a self, val: f64) -> Var<'a> {
+    pub fn add_var(&self, val: f64) -> Var {
         let len = self.len();
         Var {
             val,
@@ -118,6 +117,12 @@ impl Tape {
     /// Clear the tape by deleting all nodes (useful for clearing out intermediate values).
     pub fn clear(&self) {
         self.nodes.borrow_mut().clear();
+    }
+}
+
+impl Default for Tape {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
