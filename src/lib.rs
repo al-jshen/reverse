@@ -55,11 +55,11 @@ pub(crate) struct Node {
 /// Differentiable variable. This is the main type that users will interact with.
 pub struct Var<'a> {
     /// Value of the variable.
-    val: f64,
+    pub val: f64,
     /// Location that can be referred to be nodes in the tape.
     location: usize,
     /// Reference to a tape that this variable is associated with.
-    tape: &'a Tape,
+    pub tape: &'a Tape,
 }
 
 #[derive(Debug, Clone)]
