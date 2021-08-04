@@ -422,6 +422,18 @@ impl<'a> PartialOrd<f64> for Var<'a> {
     }
 }
 
+impl<'a> PartialEq<Var<'a>> for f64 {
+    fn eq(&self, other: &Var<'a>) -> bool {
+        other.val.eq(self)
+    }
+}
+
+impl<'a> PartialOrd<Var<'a>> for f64 {
+    fn partial_cmp(&self, other: &Var<'a>) -> Option<std::cmp::Ordering> {
+        other.val.partial_cmp(self)
+    }
+}
+
 /// Calculate gradients with respect to particular variables.
 pub trait Gradient<T, S> {
     /// Calculate the gradient with respect to variable(s) `v`.
