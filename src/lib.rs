@@ -37,6 +37,8 @@
 //! ```
 
 #![allow(clippy::suspicious_arithmetic_impl)]
+mod numeric;
+pub use numeric::*;
 
 use std::{
     cell::RefCell,
@@ -334,7 +336,7 @@ impl<'a> Var<'a> {
             tape: self.tape,
         }
     }
-    pub fn exp2(self) -> Self {
+    pub fn exp2(&self) -> Self {
         Self {
             val: self.val.exp2(),
             location: self.tape.add_node(
